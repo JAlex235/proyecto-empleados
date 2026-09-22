@@ -7,3 +7,5 @@ target/
 .settings/
 .classpath
 .project
+
+empleados-core/src/main/java/edu/umg/programacion2/proyecto/PruebaEmpleadoDAO.java
