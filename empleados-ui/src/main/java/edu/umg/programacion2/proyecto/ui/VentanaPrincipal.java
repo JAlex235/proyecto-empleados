@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -18,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
 import com.github.lgooddatepicker.components.DatePicker;
@@ -36,13 +38,14 @@ public class VentanaPrincipal extends JFrame {
     private final JTextField campoNombre;
     private final JTextField campoDepartamento;
     private final JTextField campoSalario;
-
     private final DatePicker campoFecha;
-
     private final JCheckBox checkActivo;
 
     private final JButton botonGuardar;
+    private final JButton botonActualizar;
     private final JButton botonLimpiar;
+
+    private Integer idEmpleadoSeleccionado;
 
     public VentanaPrincipal() {
 
@@ -69,39 +72,29 @@ public class VentanaPrincipal extends JFrame {
                 0
         ) {
             @Override
-            public boolean isCellEditable(
-                    int row,
-                    int column
-            ) {
+            public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
         tablaEmpleados = new JTable(modeloTabla);
+        tablaEmpleados.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        JScrollPane scrollTabla =new JScrollPane(tablaEmpleados);
-
-        add(
-                scrollTabla,
-                BorderLayout.CENTER
-        );
+        JScrollPane scrollTabla = new JScrollPane(tablaEmpleados);
+        add(scrollTabla, BorderLayout.CENTER);
 
         // ==========================================
         // CAMPOS DEL FORMULARIO
         // ==========================================
 
         campoNombre = new JTextField();
-
         campoDepartamento = new JTextField();
-
         campoSalario = new JTextField();
 
         DatePickerSettings configuracionFecha = new DatePickerSettings();
-
         configuracionFecha.setFormatForDatesCommonEra("yyyy-MM-dd");
 
-        campoFecha =new DatePicker(configuracionFecha);
-
+        campoFecha = new DatePicker(configuracionFecha);
         campoFecha.setDate(LocalDate.now());
 
         checkActivo = new JCheckBox("Empleado activo", true);
@@ -111,27 +104,21 @@ public class VentanaPrincipal extends JFrame {
         // ==========================================
 
         JPanel panelFormulario = new JPanel(new GridLayout(5, 2, 10, 10));
+        panelFormulario.setBorder(BorderFactory.createTitledBorder("Datos del empleado"));
 
-        panelFormulario.setBorder( BorderFactory.createTitledBorder("Datos del empleado"));
-
-        panelFormulario.add( new JLabel("Nombre completo:"));
-
+        panelFormulario.add(new JLabel("Nombre completo:"));
         panelFormulario.add(campoNombre);
 
-        panelFormulario.add( new JLabel("Departamento:"));
-
+        panelFormulario.add(new JLabel("Departamento:"));
         panelFormulario.add(campoDepartamento);
 
-        panelFormulario.add( new JLabel("Salario mensual:"));
-
+        panelFormulario.add(new JLabel("Salario mensual:"));
         panelFormulario.add(campoSalario);
 
-        panelFormulario.add( new JLabel("Fecha contratación:"));
-
+        panelFormulario.add(new JLabel("Fecha contratación:"));
         panelFormulario.add(campoFecha);
 
-        panelFormulario.add( new JLabel("Estado:"));
-
+        panelFormulario.add(new JLabel("Estado:"));
         panelFormulario.add(checkActivo);
 
         // ==========================================
@@ -139,41 +126,41 @@ public class VentanaPrincipal extends JFrame {
         // ==========================================
 
         botonGuardar = new JButton("Guardar");
-
+        botonActualizar = new JButton("Actualizar");
         botonLimpiar = new JButton("Limpiar");
 
-        JPanel panelBotones =new JPanel( new FlowLayout());
+        botonActualizar.setEnabled(false);
+
+        JPanel panelBotones = new JPanel(new FlowLayout());
 
         panelBotones.add(botonGuardar);
-
+        panelBotones.add(botonActualizar);
         panelBotones.add(botonLimpiar);
 
         // ==========================================
         // PANEL INFERIOR
         // ==========================================
 
-        JPanel panelInferior = new JPanel( new BorderLayout());
+        JPanel panelInferior = new JPanel(new BorderLayout());
 
         panelInferior.add(panelFormulario, BorderLayout.CENTER);
-
         panelInferior.add(panelBotones, BorderLayout.SOUTH);
 
-        add(
-                panelInferior,
-                BorderLayout.SOUTH
-        );
+        add(panelInferior, BorderLayout.SOUTH);
 
         // ==========================================
         // EVENTOS
         // ==========================================
 
-        botonGuardar.addActionListener(
-                e -> guardarEmpleado()
-        );
+        botonGuardar.addActionListener(e -> guardarEmpleado());
+        botonActualizar.addActionListener(e -> actualizarEmpleado());
+        botonLimpiar.addActionListener(e -> limpiarFormulario());
 
-        botonLimpiar.addActionListener(
-                e -> limpiarFormulario()
-        );
+        tablaEmpleados.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                cargarEmpleadoSeleccionado();
+            }
+        });
 
         // ==========================================
         // CARGA INICIAL
@@ -190,9 +177,7 @@ public class VentanaPrincipal extends JFrame {
 
         try {
 
-            List<Empleado> empleados =
-                    empleadoDAO.listarTodos();
-
+            List<Empleado> empleados = empleadoDAO.listarTodos();
             modeloTabla.setRowCount(0);
 
             for (Empleado empleado : empleados) {
@@ -204,9 +189,7 @@ public class VentanaPrincipal extends JFrame {
                                 empleado.getDepartamento(),
                                 empleado.getSalarioMensual(),
                                 empleado.getFechaContratacion(),
-                                empleado.isActivo()
-                                        ? "Activo"
-                                        : "Inactivo"
+                                empleado.isActivo() ? "Activo" : "Inactivo"
                         }
                 );
             }
@@ -215,12 +198,127 @@ public class VentanaPrincipal extends JFrame {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Error al cargar empleados: "
-                            + e.getMessage(),
+                    "Error al cargar empleados: " + e.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE
             );
         }
+    }
+
+    // ==========================================
+    // CARGAR EMPLEADO SELECCIONADO
+    // ==========================================
+
+    private void cargarEmpleadoSeleccionado() {
+
+        int filaSeleccionada = tablaEmpleados.getSelectedRow();
+
+        if (filaSeleccionada == -1) {
+            return;
+        }
+
+        int id = (Integer) modeloTabla.getValueAt(filaSeleccionada, 0);
+
+        try {
+
+            Optional<Empleado> empleado = empleadoDAO.buscarPorId(id);
+
+            if (!empleado.isPresent()) {
+                mostrarError("El empleado seleccionado ya no existe.");
+                cargarEmpleados();
+                return;
+            }
+
+            Empleado seleccionado = empleado.get();
+
+            idEmpleadoSeleccionado = seleccionado.getId();
+
+            campoNombre.setText(seleccionado.getNombreCompleto());
+            campoDepartamento.setText(seleccionado.getDepartamento());
+            campoSalario.setText(seleccionado.getSalarioMensual().toString());
+            campoFecha.setDate(seleccionado.getFechaContratacion());
+            checkActivo.setSelected(seleccionado.isActivo());
+
+            botonGuardar.setEnabled(false);
+            botonActualizar.setEnabled(true);
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al buscar empleado: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // ==========================================
+    // OBTENER Y VALIDAR DATOS DEL FORMULARIO
+    // ==========================================
+
+    private Empleado obtenerEmpleadoFormulario(int id) {
+
+        String nombre = campoNombre.getText().trim();
+        String departamento = campoDepartamento.getText().trim();
+        String salarioTexto = campoSalario.getText().trim();
+
+        if (nombre.isEmpty()) {
+            mostrarError("El nombre no puede quedar vacío.");
+            return null;
+        }
+
+        if (departamento.isEmpty()) {
+            mostrarError("El departamento no puede quedar vacío.");
+            return null;
+        }
+
+        BigDecimal salario;
+
+        try {
+            salario = new BigDecimal(salarioTexto);
+        } catch (NumberFormatException e) {
+            mostrarError("El salario debe ser un número válido.");
+            return null;
+        }
+
+        if (salario.compareTo(BigDecimal.ZERO) <= 0) {
+            mostrarError("El salario debe ser mayor a cero.");
+            return null;
+        }
+
+        LocalDate fechaContratacion = campoFecha.getDate();
+
+        if (fechaContratacion == null) {
+            mostrarError("Debe seleccionar una fecha de contratación.");
+            return null;
+        }
+
+        if (fechaContratacion.isAfter(LocalDate.now())) {
+            mostrarError("La fecha de contratación no puede ser futura.");
+            return null;
+        }
+
+        boolean activo = checkActivo.isSelected();
+
+        if (id == 0) {
+            return new Empleado(
+                    nombre,
+                    departamento,
+                    salario,
+                    fechaContratacion,
+                    activo
+            );
+        }
+
+        return new Empleado(
+                id,
+                nombre,
+                departamento,
+                salario,
+                fechaContratacion,
+                activo
+        );
     }
 
     // ==========================================
@@ -229,109 +327,11 @@ public class VentanaPrincipal extends JFrame {
 
     private void guardarEmpleado() {
 
-        String nombre = campoNombre.getText().trim();
+        Empleado nuevoEmpleado = obtenerEmpleadoFormulario(0);
 
-        String departamento = campoDepartamento.getText().trim();
-
-        String salarioTexto =campoSalario.getText().trim();
-
-        // ==========================================
-        // VALIDAR NOMBRE
-        // ==========================================
-
-        if (nombre.isEmpty()) {
-
-            mostrarError("El nombre no puede quedar vacío.");
-
+        if (nuevoEmpleado == null) {
             return;
         }
-
-        // ==========================================
-        // VALIDAR DEPARTAMENTO
-        // ==========================================
-
-        if (departamento.isEmpty()) {
-
-            mostrarError("El departamento no puede quedar vacío.");
-
-            return;
-        }
-
-        // ==========================================
-        // VALIDAR SALARIO
-        // ==========================================
-
-        BigDecimal salario;
-
-        try {
-
-            salario =new BigDecimal(salarioTexto);
-
-        } catch (NumberFormatException e) {
-
-            mostrarError("El salario debe ser un número válido.");
-
-            return;
-        }
-
-        if (salario.compareTo(BigDecimal.ZERO) <= 0) {
-
-            mostrarError( "El salario debe ser mayor a cero.");
-
-            return;
-        }
-
-        // ==========================================
-        // OBTENER FECHA DEL DATE PICKER
-        // ==========================================
-
-        LocalDate fechaContratacion =
-                campoFecha.getDate();
-
-        if (fechaContratacion == null) {
-
-            mostrarError("Debe seleccionar una fecha de contratación.");
-
-            return;
-        }
-
-        // ==========================================
-        // VALIDAR FECHA FUTURA
-        // ==========================================
-
-        if (fechaContratacion.isAfter(
-                LocalDate.now()
-        )) {
-
-            mostrarError(
-                    "La fecha de contratación no puede ser futura."
-            );
-
-            return;
-        }
-
-        // ==========================================
-        // OBTENER ESTADO
-        // ==========================================
-
-        boolean activo = checkActivo.isSelected();
-
-        // ==========================================
-        // CREAR OBJETO EMPLEADO
-        // ==========================================
-
-        Empleado nuevoEmpleado =
-                new Empleado(
-                        nombre,
-                        departamento,
-                        salario,
-                        fechaContratacion,
-                        activo
-                );
-
-        // ==========================================
-        // GUARDAR EN LA BASE DE DATOS
-        // ==========================================
 
         try {
 
@@ -339,22 +339,67 @@ public class VentanaPrincipal extends JFrame {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Empleado registrado con ID "
-                            + empleadoCreado.getId(),
+                    "Empleado registrado con ID " + empleadoCreado.getId(),
                     "Registro exitoso",
                     JOptionPane.INFORMATION_MESSAGE
             );
 
             limpiarFormulario();
-
             cargarEmpleados();
 
         } catch (SQLException e) {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Error al registrar empleado: "
-                            + e.getMessage(),
+                    "Error al registrar empleado: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    // ==========================================
+    // ACTUALIZAR EMPLEADO
+    // ==========================================
+
+    private void actualizarEmpleado() {
+
+        if (idEmpleadoSeleccionado == null) {
+            mostrarError("Debe seleccionar un empleado.");
+            return;
+        }
+
+        Empleado empleadoActualizado = obtenerEmpleadoFormulario(idEmpleadoSeleccionado);
+
+        if (empleadoActualizado == null) {
+            return;
+        }
+
+        try {
+
+            boolean actualizado = empleadoDAO.actualizar(empleadoActualizado);
+
+            if (actualizado) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Empleado actualizado correctamente.",
+                        "Actualización exitosa",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+                limpiarFormulario();
+                cargarEmpleados();
+
+            } else {
+                mostrarError("No se pudo actualizar el empleado.");
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al actualizar empleado: " + e.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE
             );
@@ -368,14 +413,18 @@ public class VentanaPrincipal extends JFrame {
     private void limpiarFormulario() {
 
         campoNombre.setText("");
-
         campoDepartamento.setText("");
-
         campoSalario.setText("");
 
         campoFecha.setDate(LocalDate.now());
-
         checkActivo.setSelected(true);
+
+        idEmpleadoSeleccionado = null;
+
+        tablaEmpleados.clearSelection();
+
+        botonGuardar.setEnabled(true);
+        botonActualizar.setEnabled(false);
 
         campoNombre.requestFocus();
     }
@@ -384,9 +433,7 @@ public class VentanaPrincipal extends JFrame {
     // MOSTRAR ERROR DE VALIDACIÓN
     // ==========================================
 
-    private void mostrarError(
-            String mensaje
-    ) {
+    private void mostrarError(String mensaje) {
 
         JOptionPane.showMessageDialog(
                 this,
