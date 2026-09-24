@@ -43,6 +43,7 @@ public class VentanaPrincipal extends JFrame {
 
     private final JButton botonGuardar;
     private final JButton botonActualizar;
+    private final JButton botonEliminar;
     private final JButton botonLimpiar;
 
     private Integer idEmpleadoSeleccionado;
@@ -127,14 +128,17 @@ public class VentanaPrincipal extends JFrame {
 
         botonGuardar = new JButton("Guardar");
         botonActualizar = new JButton("Actualizar");
+        botonEliminar = new JButton("Eliminar");
         botonLimpiar = new JButton("Limpiar");
 
         botonActualizar.setEnabled(false);
+        botonEliminar.setEnabled(false);
 
         JPanel panelBotones = new JPanel(new FlowLayout());
 
         panelBotones.add(botonGuardar);
         panelBotones.add(botonActualizar);
+        panelBotones.add(botonEliminar);
         panelBotones.add(botonLimpiar);
 
         // ==========================================
@@ -154,6 +158,7 @@ public class VentanaPrincipal extends JFrame {
 
         botonGuardar.addActionListener(e -> guardarEmpleado());
         botonActualizar.addActionListener(e -> actualizarEmpleado());
+        botonEliminar.addActionListener(e -> eliminarEmpleado());
         botonLimpiar.addActionListener(e -> limpiarFormulario());
 
         tablaEmpleados.getSelectionModel().addListSelectionListener(e -> {
@@ -241,7 +246,7 @@ public class VentanaPrincipal extends JFrame {
 
             botonGuardar.setEnabled(false);
             botonActualizar.setEnabled(true);
-
+            botonEliminar.setEnabled(true);
         } catch (SQLException e) {
 
             JOptionPane.showMessageDialog(
@@ -405,6 +410,62 @@ public class VentanaPrincipal extends JFrame {
             );
         }
     }
+
+    // ==========================================
+    // ELIMINAR EMPLEADO
+    // ==========================================
+
+    private void eliminarEmpleado() {
+
+        if (idEmpleadoSeleccionado == null) {
+            mostrarError("Debe seleccionar un empleado.");
+            return;
+        }
+
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "¿Está seguro de eliminar este empleado?\n"
+                        + "Esta acción eliminará el registro permanentemente.",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (respuesta != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+
+            boolean eliminado = empleadoDAO.eliminar(idEmpleadoSeleccionado);
+
+            if (eliminado) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Empleado eliminado correctamente.",
+                        "Eliminación exitosa",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+                limpiarFormulario();
+                cargarEmpleados();
+
+            } else {
+                mostrarError("No se pudo eliminar el empleado.");
+            }
+
+        } catch (SQLException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Error al eliminar empleado: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
 
     // ==========================================
     // LIMPIAR FORMULARIO
