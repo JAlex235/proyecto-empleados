@@ -1,178 +1,211 @@
-# Proyecto Individual — CRUD con Swing + Maven multi-módulo + MySQL/MariaDB
+# Proyecto Empleados
 
-**Duración: 1 semana, individual, fuera de clase.**
+Aplicación de escritorio desarrollada en Java para la gestión de empleados de una empresa.  
+El proyecto implementa un CRUD completo utilizando **Swing**, **Maven multi-módulo**, **JDBC** y **MariaDB**.
 
-## 1. Contexto
+## Funcionalidades
 
-En `clase05-jdbc-con-maven`, `clase07-*` y `clase08-productos-crud` construiste
-CRUDs de consola: `Connection` → `PreparedStatement` → `ResultSet`, DAO con
-las 4 operaciones, todo persistido en MySQL. Ese es el motor que ya sabes
-construir.
+La aplicación permite:
 
-Esta semana das dos saltos a la vez:
+- Registrar empleados.
+- Listar todos los empleados.
+- Seleccionar y editar un empleado existente.
+- Cambiar el estado de un empleado entre activo e inactivo.
+- Eliminar físicamente un empleado, con confirmación previa.
+- Validar los datos antes de enviarlos a la base de datos.
+- Mostrar errores mediante ventanas de diálogo sin cerrar la aplicación.
 
-1. **De consola a interfaz gráfica**: en vez de un menú con `Scanner`,
-   construyes una ventana Swing con tabla, formulario y botones.
-2. **De un solo proyecto a un proyecto Maven multi-módulo**: tu lógica de
-   datos (modelo + DAO) vive en un **módulo librería** independiente, que tu
-   módulo de interfaz gráfica **consume como dependencia** — no como código
-   copiado y pegado.
+## Datos de un empleado
 
-No hay tabla de base de datos ya creada para ti. Tu instructor te va a asignar
-una de **tres variantes de dominio** (A, B o C, ver carpeta `variantes/`),
-descritas en términos de negocio, no en SQL. **Diseñar el esquema es parte de
-la evaluación.**
+Cada empleado contiene:
 
-## 2. Objetivo de aprendizaje
+- ID autogenerado.
+- Nombre completo.
+- Departamento.
+- Salario mensual.
+- Fecha de contratación.
+- Estado activo o inactivo.
 
-Al terminar deberías poder, sin ver ningún ejemplo:
+## Reglas de validación
 
-1. Traducir una descripción conceptual de un dominio a una tabla SQL
-   (tipos de dato, longitudes, `NOT NULL`, claves) y justificar tus
-   decisiones.
-2. Estructurar un proyecto Maven **multi-módulo**: un módulo tipo librería
-   (`.jar`) instalado en el repositorio local con `mvn install`, y un módulo
-   de aplicación que declara esa librería como `<dependency>` en su `pom.xml`.
-3. Construir una interfaz Swing (`JFrame`, `JTable`, formulario) que llame al
-   DAO de tu librería para listar, crear, actualizar y eliminar.
-4. Mantener la interfaz gráfica **desacoplada** de JDBC: la clase de UI no
-   debería importar `java.sql.*` — solo llama a métodos del DAO/servicio de
-   tu librería.
+Antes de realizar una operación de creación o actualización se verifica que:
 
-## 3. Prerequisitos
+- El nombre no esté vacío.
+- El departamento no esté vacío.
+- El salario sea un valor numérico mayor que cero.
+- Se haya seleccionado una fecha de contratación.
+- La fecha de contratación no sea futura.
 
-- MySQL/MariaDB corriendo local, con acceso para crear una base de datos
-  nueva (la que uses para tu variante).
-- JDK 11+ y Maven instalados.
-- Haber completado (o al menos entendido) `clase05-jdbc-con-maven` y
-  `clase08-productos-crud` — el patrón DAO es el mismo, solo cambia quién lo
-  llama (una UI en vez de un menú de consola).
+## Arquitectura del proyecto
 
-## 4. Enunciado general
+El proyecto utiliza Maven multi-módulo para separar responsabilidades.
 
-Tu instructor te asignó una variante (A, B o C). Léela en `variantes/`. Ahí
-encontrarás **solo la descripción conceptual** de la entidad: qué datos
-guarda, qué reglas de negocio tiene. **No hay ningún `CREATE TABLE`.**
-
-Con esa descripción debes:
-
-1. Diseñar tú mismo el esquema de la tabla (nombre de columnas, tipos,
-   longitudes, `NOT NULL`, clave primaria autoincremental). Documenta tu
-   diseño en un archivo `sql/schema.sql` dentro de tu propio proyecto —
-   ese script es tu entregable, no algo que se te da.
-2. Construir un proyecto Maven multi-módulo con la estructura de la sección 5.
-3. Implementar el CRUD completo (Create, Read, Update, Delete) accesible
-   desde una ventana Swing.
-
-### Requisitos técnicos obligatorios
-
-| Requisito | Detalle |
-|---|---|
-| Maven multi-módulo | Un módulo `*-core` (librería: modelo + DAO) empaquetado como `jar` e instalado con `mvn install`. Un módulo `*-ui` que lo declara como `<dependency>` en su `pom.xml` — **no copies las clases del DAO al módulo UI.** |
-| Persistencia real | MySQL/MariaDB vía JDBC + patrón DAO (igual que `clase08`), no en memoria. |
-| Interfaz Swing | Una ventana con `JTable` para listar, un formulario (campos de texto según tu entidad) para crear/actualizar, y un botón de eliminar con confirmación (`JOptionPane`). |
-| CRUD completo | Las 4 operaciones deben funcionar desde la UI, no solo desde el DAO. |
-| Validación antes de tocar la BD | Igual que en `clase08`: campos obligatorios no vacíos, números en su rango válido, antes de llamar al DAO. |
-| Manejo de errores sin crash | Ninguna `SQLException` debe tirar la aplicación — se muestra en un `JOptionPane` de error, sin exponer el stacktrace completo al usuario. |
-| Esquema propio | Tu `sql/schema.sql`, escrito por ti a partir de la descripción conceptual de tu variante. |
-
-### ¿Por qué un módulo librería separado?
-
-Es la misma idea de "separar responsabilidades" que vas a formalizar más
-adelante con SOLID: tu lógica de acceso a datos no debería saber que existe
-Swing, y tu interfaz gráfica no debería saber que existe JDBC. Al ponerlas en
-módulos Maven distintos, el compilador te obliga a respetar esa separación —
-si te equivocas e intentas usar `ResultSet` en la UI, no vas a poder porque
-ese módulo ni siquiera tiene el driver de MySQL como dependencia directa.
-
-## 5. Estructura de proyecto esperada
-
-```
-<tu-proyecto>/                        (pom.xml "padre", packaging=pom)
+```text
+proyecto-empleados/
 ├── pom.xml
-├── <tu-proyecto>-core/               (módulo librería)
-│   ├── pom.xml                       (packaging=jar)
+├── empleados-core/
+│   ├── pom.xml
 │   └── src/main/java/edu/umg/programacion2/proyecto/
-│       ├── modelo/<Entidad>.java
-│       └── dao/<Entidad>DAO.java
-└── <tu-proyecto>-ui/                 (módulo aplicación)
-    ├── pom.xml                       (packaging=jar, depende de <tu-proyecto>-core)
-    ├── sql/schema.sql                (tu diseño, no un archivo dado)
-    └── src/main/java/edu/umg/programacion2/proyecto/
-        ├── MainUI.java               (lanza la ventana)
-        └── ui/VentanaPrincipal.java  (JFrame con JTable + formulario)
+│       ├── modelo/
+│       │   └── Empleado.java
+│       └── dao/
+│           └── EmpleadoDAO.java
+│
+├── empleados-ui/
+│   ├── pom.xml
+│   ├── sql/
+│   │   └── schema.sql
+│   └── src/main/java/edu/umg/programacion2/proyecto/
+│       ├── MainUI.java
+│       └── ui/
+│           └── VentanaPrincipal.java
+│
+└── variantes/
+    └── variante-A-empleados.md
 ```
 
-Referencia de multi-módulo Maven (`<modules>` en el `pom.xml` padre,
-`<dependency>` del `-ui` hacia el `-core`): puedes preguntarle a la IA cómo se
-declara un `pom.xml` padre con módulos — eso es sintaxis de Maven, no la
-lógica de tu proyecto (ver sección 8).
+### empleados-core
 
-### Contrato del DAO (adapta `<Entidad>` a tu variante)
+Contiene la lógica relacionada con los datos:
+
+- `Empleado.java`: representa la entidad empleado dentro de la aplicación.
+- `EmpleadoDAO.java`: contiene las operaciones JDBC para crear, listar, buscar, actualizar y eliminar empleados.
+
+Este módulo se empaqueta como una librería `.jar`.
+
+### empleados-ui
+
+Contiene la interfaz gráfica desarrollada con Swing.
+
+- `MainUI.java`: inicia la aplicación.
+- `VentanaPrincipal.java`: contiene la tabla, formulario, validaciones y botones del CRUD.
+- `schema.sql`: contiene el script utilizado para crear la base de datos y la tabla.
+
+El módulo `empleados-ui` utiliza `empleados-core` como dependencia.
+
+## Base de datos
+
+El proyecto utiliza MariaDB mediante JDBC.
+
+La base de datos utilizada es:
+
+```text
+empleados_db
+```
+
+El script para crear la estructura se encuentra en:
+
+```text
+empleados-ui/sql/schema.sql
+```
+
+La tabla `empleados` utiliza la siguiente estructura general:
+
+| Campo | Tipo |
+|---|---|
+| id | INT AUTO_INCREMENT PRIMARY KEY |
+| nombre_completo | VARCHAR(100) NOT NULL |
+| departamento | VARCHAR(100) NOT NULL |
+| salario_mensual | DECIMAL(10,2) NOT NULL |
+| fecha_contratacion | DATE NOT NULL |
+| activo | BOOLEAN NOT NULL DEFAULT TRUE |
+
+## Tecnologías utilizadas
+
+- Java 11
+- Maven
+- Swing
+- JDBC
+- MariaDB
+- LGoodDatePicker
+
+## Requisitos
+
+Para ejecutar el proyecto se necesita:
+
+- JDK 11 o superior.
+- Maven instalado.
+- MariaDB disponible localmente.
+- La base de datos `empleados_db` creada mediante `schema.sql`.
+
+Las credenciales de conexión pueden configurarse en:
+
+```text
+empleados-core/src/main/java/edu/umg/programacion2/proyecto/dao/EmpleadoDAO.java
+```
+
+## Compilación
+
+Desde la carpeta raíz del proyecto:
+
+```bash
+mvn clean install
+```
+
+Maven compilará primero `empleados-core` y posteriormente `empleados-ui`.
+
+## Ejecución
+
+La clase principal de la aplicación es:
+
+```text
+edu.umg.programacion2.proyecto.MainUI
+```
+
+Puede ejecutarse desde el IDE o mediante Maven:
+
+```bash
+mvn -pl empleados-ui exec:java "-Dexec.mainClass=edu.umg.programacion2.proyecto.MainUI"
+```
+
+## Flujo general
+
+```text
+Usuario
+   ↓
+Interfaz Swing
+   ↓
+EmpleadoDAO
+   ↓
+MariaDB
+```
+
+La interfaz gráfica no contiene consultas SQL.  
+Las operaciones de persistencia se encuentran centralizadas en `EmpleadoDAO`.
+
+## Operaciones del DAO
+
+`EmpleadoDAO` implementa:
 
 ```java
-public class <Entidad>DAO {
-    public <Entidad> crear(<Entidad> item) throws SQLException { ... }
-    public List<<Entidad>> listarTodos() throws SQLException { ... }
-    public Optional<<Entidad>> buscarPorId(int id) throws SQLException { ... }
-    public boolean actualizar(<Entidad> item) throws SQLException { ... }
-    public boolean eliminar(int id) throws SQLException { ... }
-}
+Empleado crear(Empleado empleado)
+List<Empleado> listarTodos()
+Optional<Empleado> buscarPorId(int id)
+boolean actualizar(Empleado empleado)
+boolean eliminar(int id)
 ```
 
-Mismo contrato que viste en `clase08`, viviendo ahora en el módulo `-core`.
+Todas las consultas utilizan `PreparedStatement`.
 
-## 6. Checklist de entrega
+## Interfaz
 
-- [ ] `sql/schema.sql` propio, coherente con la descripción conceptual de tu
-      variante (tipos, `NOT NULL`, PK autoincremental).
-- [ ] Proyecto Maven con **dos módulos reales** (`-core` y `-ui`), el padre
-      con packaging `pom` y `<modules>`.
-- [ ] `-core` compila e instala (`mvn install`) sin depender de Swing.
-- [ ] `-ui` declara `-core` como `<dependency>` — no hay clases DAO
-      duplicadas en `-ui`.
-- [ ] Ventana Swing: listar (`JTable`), crear, actualizar, eliminar (con
-      confirmación) — las 4 operaciones funcionan contra MySQL/MariaDB.
-- [ ] Validación de campos antes de llamar al DAO.
-- [ ] Ningún `catch` vacío; errores mostrados al usuario sin stacktrace.
-- [ ] Todo el SQL usa `PreparedStatement`.
-- [ ] Puedes explicar, para cualquier parte del código, por qué está en
-      `-core` o en `-ui`.
+La ventana principal incluye:
 
-## 7. Criterios de evaluación
+- Tabla de empleados.
+- Campo de nombre.
+- Campo de departamento.
+- Campo de salario.
+- Selector de fecha.
+- Estado activo/inactivo.
+- Botón Guardar.
+- Botón Actualizar.
+- Botón Eliminar.
+- Botón Limpiar.
 
-| Criterio | % |
-|---|---|
-| Esquema propio bien diseñado (tipos, NOT NULL, PK) y justificado | 15% |
-| Separación real en dos módulos Maven (`-core` sin Swing, `-ui` consumiendo `-core` como dependencia) | 20% |
-| CRUD completo y funcional desde la interfaz Swing (las 4 operaciones) | 30% |
-| `PreparedStatement` + manejo de `SQLException` sin exponer stacktraces ni catch vacíos | 15% |
-| Validación de entrada antes de tocar la BD | 10% |
-| Puede explicar cualquier decisión de diseño cuando se le pregunta | 10% |
+La selección de una fila carga los datos del empleado en el formulario para permitir su actualización o eliminación.
 
-## 8. Cómo usar la IA en este proyecto
+## Autor
 
-Permitido y esperado para **agilizar sintaxis y lógica** con el fin de optimizar el trabajo, por ejemplo:
-
-- "¿Cómo declaro un `pom.xml` padre con dos módulos en Maven?"
-- "¿Cómo hago que un `JTable` se refresque después de un `INSERT`?"
-- "¿Cómo capturo el evento de doble clic en una fila de `JTable`?"
-
-## 9. Cronograma sugerido (1 semana)
-
-| Día | Bloque |
-|---|---|
-| 1 | Leer tu variante, diseñar `sql/schema.sql`, crear la BD y probarla con datos de ejemplo. |
-| 2 | Armar el `pom.xml` padre + los dos módulos vacíos, verificar que `-ui` compila contra `-core` con `mvn install`. |
-| 3 | En `-core`: modelo + DAO completo (las 4 operaciones), probado desde un `main` de consola temporal. |
-| 4–5 | En `-ui`: ventana Swing — listar en `JTable`, formulario de creación. |
-| 6 | Actualizar y eliminar (con confirmación) desde la UI. |
-| 7 | Pulir validaciones y manejo de errores; prueba end-to-end completa. |
-
-## 10. Siguiente paso: examen parcial
-
-Este proyecto es la base de dos mejoras que vas a implementar en el examen
-parcial (2 horas hábiles). Cuáles te tocan depende del último dígito de tu
-carné — ver `examen-parcial-mejoras.md`. Conviene que termines el CRUD base
-con margen antes del parcial: ese día no hay tiempo para terminar el
-proyecto base, solo para extenderlo.
+José Alejandro Cortés Díaz  
+Curso: Programación II  
+Universidad Mariano Gálvez de Guatemala
