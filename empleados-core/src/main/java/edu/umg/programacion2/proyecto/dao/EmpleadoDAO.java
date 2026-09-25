@@ -27,8 +27,8 @@ public class EmpleadoDAO {
 
         String sql = "INSERT INTO empleados "
                 + "(nombre_completo, departamento, salario_mensual, "
-                + "fecha_contratacion, activo) "
-                + "VALUES (?, ?, ?, ?, ?)";
+                + "fecha_contratacion, activo, anios_experiencia) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conexion =
                     DriverManager.getConnection(URL, USUARIO, PASSWORD);
@@ -51,6 +51,8 @@ public class EmpleadoDAO {
 
             statement.setBoolean(5, empleado.isActivo());
 
+            statement.setInt(6, empleado.getAniosExperiencia());
+
             statement.executeUpdate();
 
             try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -65,7 +67,8 @@ public class EmpleadoDAO {
                             empleado.getDepartamento(),
                             empleado.getSalarioMensual(),
                             empleado.getFechaContratacion(),
-                            empleado.isActivo()
+                            empleado.isActivo(),
+                            empleado.getAniosExperiencia()
                     );
                 }
             }
@@ -82,7 +85,7 @@ public class EmpleadoDAO {
         List<Empleado> empleados = new ArrayList<>();
 
         String sql = "SELECT id, nombre_completo, departamento, "
-                + "salario_mensual, fecha_contratacion, activo "
+                + "salario_mensual, fecha_contratacion, activo, anios_experiencia "
                 + "FROM empleados "
                 + "ORDER BY id";
 
@@ -107,7 +110,7 @@ public class EmpleadoDAO {
     public Optional<Empleado> buscarPorId(int id) throws SQLException {
 
         String sql = "SELECT id, nombre_completo, departamento, "
-                + "salario_mensual, fecha_contratacion, activo "
+                + "salario_mensual, fecha_contratacion, activo, anios_experiencia "
                 + "FROM empleados "
                 + "WHERE id = ?";
 
@@ -138,7 +141,8 @@ public class EmpleadoDAO {
                 + "departamento = ?, "
                 + "salario_mensual = ?, "
                 + "fecha_contratacion = ?, "
-                + "activo = ? "
+                + "activo = ?, "
+                + "anios_experiencia = ? "
                 + "WHERE id = ?";
 
         try (Connection conexion =
@@ -159,7 +163,8 @@ public class EmpleadoDAO {
             );
 
             statement.setBoolean(5, empleado.isActivo());
-            statement.setInt(6, empleado.getId());
+            statement.setInt(6, empleado.getAniosExperiencia());
+            statement.setInt(7, empleado.getId());
 
             return statement.executeUpdate() > 0;
         }
@@ -204,6 +209,9 @@ public class EmpleadoDAO {
 
         boolean activo =
                 data.getBoolean("activo");
+        
+        int aniosExperiencia =
+                data.getInt("anios_experiencia");
 
         return new Empleado(
                 id,
@@ -211,7 +219,8 @@ public class EmpleadoDAO {
                 departamento,
                 salarioMensual,
                 fechaContratacion,
-                activo
+                activo,
+                aniosExperiencia
         );
     }
 }

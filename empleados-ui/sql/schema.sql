@@ -17,3 +17,7 @@ CREATE TABLE empleados (
     ## Empleado activo de tipo booleano
     activo BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+## EXAMEN PARCIAL 2 AGREGAR COLUMNA anios-experiencia de tipo int no nulo y valor 0 como base
+ALTER TABLE empleados
+ADD COLUMN anios_experiencia INT NOT NULL DEFAULT 0;

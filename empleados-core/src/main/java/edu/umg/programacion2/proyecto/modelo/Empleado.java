@@ -11,23 +11,25 @@ public class Empleado {
     private final BigDecimal salarioMensual;
     private final LocalDate fechaContratacion;
     private final boolean activo;
+    private final int aniosExperiencia;
 
     public Empleado(int id, String nombreCompleto, String departamento,
                     BigDecimal salarioMensual, LocalDate fechaContratacion,
-                    boolean activo) {
+                    boolean activo, int aniosExperiencia) {
         this.id = id;
         this.nombreCompleto = nombreCompleto;
         this.departamento = departamento;
         this.salarioMensual = salarioMensual;
         this.fechaContratacion = fechaContratacion;
         this.activo = activo;
+        this.aniosExperiencia = aniosExperiencia;
     }
 
     public Empleado(String nombreCompleto, String departamento,
                     BigDecimal salarioMensual, LocalDate fechaContratacion,
-                    boolean activo) {
+                    boolean activo, int aniosExperiencia) {
         this(0, nombreCompleto, departamento, salarioMensual,
-                fechaContratacion, activo);
+                fechaContratacion, activo, aniosExperiencia);
     }
 
     public int getId() {
@@ -54,14 +56,19 @@ public class Empleado {
         return activo;
     }
 
+    public int getAniosExperiencia() {
+        return aniosExperiencia;
+    }
+
     @Override
     public String toString() {
-        return String.format("[%d] %s | %s | Q%s | %s | %s",
+        return String.format("[%d] %s | %s | Q%s | %s | %s | %d",
                 id,
                 nombreCompleto,
                 departamento,
                 salarioMensual,
                 fechaContratacion,
-                activo ? "Activo" : "Inactivo");
+                activo ? "Activo" : "Inactivo",
+                aniosExperiencia);                
     }
 }
