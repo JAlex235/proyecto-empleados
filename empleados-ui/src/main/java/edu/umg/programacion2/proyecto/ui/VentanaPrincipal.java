@@ -38,6 +38,7 @@ public class VentanaPrincipal extends JFrame {
     private final JTextField campoNombre;
     private final JTextField campoDepartamento;
     private final JTextField campoSalario;
+    private final JTextField campoAniosExperiencia;
     private final DatePicker campoFecha;
     private final JCheckBox checkActivo;
 
@@ -68,7 +69,8 @@ public class VentanaPrincipal extends JFrame {
                         "Departamento",
                         "Salario",
                         "Fecha de contratación",
-                        "Activo"
+                        "Activo",
+                        "Años de experiencia"
                 },
                 0
         ) {
@@ -79,7 +81,9 @@ public class VentanaPrincipal extends JFrame {
         };
 
         tablaEmpleados = new JTable(modeloTabla);
-        tablaEmpleados.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tablaEmpleados.setSelectionMode(
+                ListSelectionModel.SINGLE_SELECTION
+        );
 
         JScrollPane scrollTabla = new JScrollPane(tablaEmpleados);
         add(scrollTabla, BorderLayout.CENTER);
@@ -91,8 +95,11 @@ public class VentanaPrincipal extends JFrame {
         campoNombre = new JTextField();
         campoDepartamento = new JTextField();
         campoSalario = new JTextField();
+        campoAniosExperiencia = new JTextField("0");
 
-        DatePickerSettings configuracionFecha = new DatePickerSettings();
+        DatePickerSettings configuracionFecha =
+                new DatePickerSettings();
+
         configuracionFecha.setFormatForDatesCommonEra("yyyy-MM-dd");
 
         campoFecha = new DatePicker(configuracionFecha);
@@ -104,8 +111,13 @@ public class VentanaPrincipal extends JFrame {
         // PANEL DEL FORMULARIO
         // ==========================================
 
-        JPanel panelFormulario = new JPanel(new GridLayout(5, 2, 10, 10));
-        panelFormulario.setBorder(BorderFactory.createTitledBorder("Datos del empleado"));
+        JPanel panelFormulario = new JPanel(
+                new GridLayout(6, 2, 10, 10)
+        );
+
+        panelFormulario.setBorder(
+                BorderFactory.createTitledBorder("Datos del empleado")
+        );
 
         panelFormulario.add(new JLabel("Nombre completo:"));
         panelFormulario.add(campoNombre);
@@ -121,6 +133,9 @@ public class VentanaPrincipal extends JFrame {
 
         panelFormulario.add(new JLabel("Estado:"));
         panelFormulario.add(checkActivo);
+
+        panelFormulario.add(new JLabel("Años de experiencia:"));
+        panelFormulario.add(campoAniosExperiencia);
 
         // ==========================================
         // BOTONES
@@ -194,7 +209,8 @@ public class VentanaPrincipal extends JFrame {
                                 empleado.getDepartamento(),
                                 empleado.getSalarioMensual(),
                                 empleado.getFechaContratacion(),
-                                empleado.isActivo() ? "Activo" : "Inactivo"
+                                empleado.isActivo() ? "Activo" : "Inactivo",
+                                empleado.getAniosExperiencia()
                         }
                 );
             }
@@ -240,13 +256,19 @@ public class VentanaPrincipal extends JFrame {
 
             campoNombre.setText(seleccionado.getNombreCompleto());
             campoDepartamento.setText(seleccionado.getDepartamento());
-            campoSalario.setText(seleccionado.getSalarioMensual().toString());
+            campoSalario.setText(
+                    seleccionado.getSalarioMensual().toString()
+            );
             campoFecha.setDate(seleccionado.getFechaContratacion());
             checkActivo.setSelected(seleccionado.isActivo());
+            campoAniosExperiencia.setText(
+                    Integer.toString(seleccionado.getAniosExperiencia())
+            );
 
             botonGuardar.setEnabled(false);
             botonActualizar.setEnabled(true);
             botonEliminar.setEnabled(true);
+
         } catch (SQLException e) {
 
             JOptionPane.showMessageDialog(
@@ -292,6 +314,26 @@ public class VentanaPrincipal extends JFrame {
             return null;
         }
 
+        int aniosExperiencia;
+
+        try {
+            aniosExperiencia = Integer.parseInt(
+                    campoAniosExperiencia.getText().trim()
+            );
+        } catch (NumberFormatException e) {
+            mostrarError(
+                    "Los años de experiencia deben ser un número entero válido."
+            );
+            return null;
+        }
+
+        if (aniosExperiencia < 0) {
+            mostrarError(
+                    "Los años de experiencia no pueden ser negativos."
+            );
+            return null;
+        }
+
         LocalDate fechaContratacion = campoFecha.getDate();
 
         if (fechaContratacion == null) {
@@ -312,7 +354,8 @@ public class VentanaPrincipal extends JFrame {
                     departamento,
                     salario,
                     fechaContratacion,
-                    activo
+                    activo,
+                    aniosExperiencia
             );
         }
 
@@ -322,7 +365,8 @@ public class VentanaPrincipal extends JFrame {
                 departamento,
                 salario,
                 fechaContratacion,
-                activo
+                activo,
+                aniosExperiencia
         );
     }
 
@@ -374,7 +418,8 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
 
-        Empleado empleadoActualizado = obtenerEmpleadoFormulario(idEmpleadoSeleccionado);
+        Empleado empleadoActualizado =
+                obtenerEmpleadoFormulario(idEmpleadoSeleccionado);
 
         if (empleadoActualizado == null) {
             return;
@@ -382,7 +427,9 @@ public class VentanaPrincipal extends JFrame {
 
         try {
 
-            boolean actualizado = empleadoDAO.actualizar(empleadoActualizado);
+            boolean actualizado = empleadoDAO.actualizar(
+                    empleadoActualizado
+            );
 
             if (actualizado) {
 
@@ -437,7 +484,9 @@ public class VentanaPrincipal extends JFrame {
 
         try {
 
-            boolean eliminado = empleadoDAO.eliminar(idEmpleadoSeleccionado);
+            boolean eliminado = empleadoDAO.eliminar(
+                    idEmpleadoSeleccionado
+            );
 
             if (eliminado) {
 
@@ -466,7 +515,6 @@ public class VentanaPrincipal extends JFrame {
         }
     }
 
-
     // ==========================================
     // LIMPIAR FORMULARIO
     // ==========================================
@@ -476,6 +524,7 @@ public class VentanaPrincipal extends JFrame {
         campoNombre.setText("");
         campoDepartamento.setText("");
         campoSalario.setText("");
+        campoAniosExperiencia.setText("0");
 
         campoFecha.setDate(LocalDate.now());
         checkActivo.setSelected(true);
