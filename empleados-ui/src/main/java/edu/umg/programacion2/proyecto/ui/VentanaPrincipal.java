@@ -39,6 +39,7 @@ public class VentanaPrincipal extends JFrame {
     private final JTextField campoDepartamento;
     private final JTextField campoSalario;
     private final JTextField campoAniosExperiencia;
+
     private final DatePicker campoFecha;
     private final JCheckBox checkActivo;
 
@@ -47,6 +48,9 @@ public class VentanaPrincipal extends JFrame {
     private final JButton botonEliminar;
     private final JButton botonLimpiar;
 
+    private final JLabel etiquetaMayorExperiencia;
+    private final JLabel etiquetaMenorExperiencia;
+
     private Integer idEmpleadoSeleccionado;
 
     public VentanaPrincipal() {
@@ -54,7 +58,7 @@ public class VentanaPrincipal extends JFrame {
         empleadoDAO = new EmpleadoDAO();
 
         setTitle("Gestión de empleados");
-        setSize(900, 600);
+        setSize(1000, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -81,12 +85,41 @@ public class VentanaPrincipal extends JFrame {
         };
 
         tablaEmpleados = new JTable(modeloTabla);
+
         tablaEmpleados.setSelectionMode(
                 ListSelectionModel.SINGLE_SELECTION
         );
 
         JScrollPane scrollTabla = new JScrollPane(tablaEmpleados);
+
         add(scrollTabla, BorderLayout.CENTER);
+
+        // ==========================================
+        // RESUMEN DE EXPERIENCIA
+        // ==========================================
+
+        etiquetaMayorExperiencia = new JLabel(
+                "Mayor experiencia: sin empleados registrados."
+        );
+
+        etiquetaMenorExperiencia = new JLabel(
+                "Menor experiencia: sin empleados registrados."
+        );
+
+        JPanel panelResumen = new JPanel(
+                new GridLayout(2, 1, 5, 5)
+        );
+
+        panelResumen.setBorder(
+                BorderFactory.createTitledBorder(
+                        "Resumen de experiencia"
+                )
+        );
+
+        panelResumen.add(etiquetaMayorExperiencia);
+        panelResumen.add(etiquetaMenorExperiencia);
+
+        add(panelResumen, BorderLayout.NORTH);
 
         // ==========================================
         // CAMPOS DEL FORMULARIO
@@ -198,6 +231,7 @@ public class VentanaPrincipal extends JFrame {
         try {
 
             List<Empleado> empleados = empleadoDAO.listarTodos();
+
             modeloTabla.setRowCount(0);
 
             for (Empleado empleado : empleados) {
@@ -215,7 +249,17 @@ public class VentanaPrincipal extends JFrame {
                 );
             }
 
+            actualizarResumenExperiencia(empleados);
+
         } catch (SQLException e) {
+
+            etiquetaMayorExperiencia.setText(
+                    "Mayor experiencia: no se pudo cargar."
+            );
+
+            etiquetaMenorExperiencia.setText(
+                    "Menor experiencia: no se pudo cargar."
+            );
 
             JOptionPane.showMessageDialog(
                     this,
@@ -224,6 +268,58 @@ public class VentanaPrincipal extends JFrame {
                     JOptionPane.ERROR_MESSAGE
             );
         }
+    }
+
+    // ==========================================
+    // CALCULAR MAYOR Y MENOR EXPERIENCIA
+    // ==========================================
+
+    private void actualizarResumenExperiencia(List<Empleado> empleados) {
+
+        if (empleados.isEmpty()) {
+
+            etiquetaMayorExperiencia.setText(
+                    "Mayor experiencia: sin empleados registrados."
+            );
+
+            etiquetaMenorExperiencia.setText(
+                    "Menor experiencia: sin empleados registrados."
+            );
+
+            return;
+        }
+
+        Empleado mayorExperiencia = empleados.get(0);
+        Empleado menorExperiencia = empleados.get(0);
+
+        for (Empleado empleado : empleados) {
+
+            if (empleado.getAniosExperiencia() > mayorExperiencia.getAniosExperiencia()) {
+
+                mayorExperiencia = empleado;
+            }
+
+            if (empleado.getAniosExperiencia() < menorExperiencia.getAniosExperiencia()) {
+
+                menorExperiencia = empleado;
+            }
+        }
+
+        etiquetaMayorExperiencia.setText(
+                "Mayor experiencia: "
+                        + " (ID: " + mayorExperiencia.getId() + ") "
+                        + mayorExperiencia.getNombreCompleto()
+                        + " — " + mayorExperiencia.getAniosExperiencia()
+                        + " años"
+        );
+
+        etiquetaMenorExperiencia.setText(
+                "Menor experiencia: " 
+                + " (ID: " + menorExperiencia.getId() + ") "
+                + menorExperiencia.getNombreCompleto()
+                + " — " + menorExperiencia.getAniosExperiencia()
+                + " años"
+        );
     }
 
     // ==========================================
@@ -238,7 +334,11 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
 
-        int id = (Integer) modeloTabla.getValueAt(filaSeleccionada, 0);
+        int filaModelo = tablaEmpleados.convertRowIndexToModel(
+                filaSeleccionada
+        );
+
+        int id = (Integer) modeloTabla.getValueAt(filaModelo, 0);
 
         try {
 
@@ -246,6 +346,7 @@ public class VentanaPrincipal extends JFrame {
 
             if (!empleado.isPresent()) {
                 mostrarError("El empleado seleccionado ya no existe.");
+                limpiarFormulario();
                 cargarEmpleados();
                 return;
             }
@@ -256,11 +357,14 @@ public class VentanaPrincipal extends JFrame {
 
             campoNombre.setText(seleccionado.getNombreCompleto());
             campoDepartamento.setText(seleccionado.getDepartamento());
+
             campoSalario.setText(
                     seleccionado.getSalarioMensual().toString()
             );
+
             campoFecha.setDate(seleccionado.getFechaContratacion());
             checkActivo.setSelected(seleccionado.isActivo());
+
             campoAniosExperiencia.setText(
                     Integer.toString(seleccionado.getAniosExperiencia())
             );
@@ -289,6 +393,7 @@ public class VentanaPrincipal extends JFrame {
         String nombre = campoNombre.getText().trim();
         String departamento = campoDepartamento.getText().trim();
         String salarioTexto = campoSalario.getText().trim();
+        String aniosTexto = campoAniosExperiencia.getText().trim();
 
         if (nombre.isEmpty()) {
             mostrarError("El nombre no puede quedar vacío.");
@@ -317,9 +422,7 @@ public class VentanaPrincipal extends JFrame {
         int aniosExperiencia;
 
         try {
-            aniosExperiencia = Integer.parseInt(
-                    campoAniosExperiencia.getText().trim()
-            );
+            aniosExperiencia = Integer.parseInt(aniosTexto);
         } catch (NumberFormatException e) {
             mostrarError(
                     "Los años de experiencia deben ser un número entero válido."
@@ -535,6 +638,7 @@ public class VentanaPrincipal extends JFrame {
 
         botonGuardar.setEnabled(true);
         botonActualizar.setEnabled(false);
+        botonEliminar.setEnabled(false);
 
         campoNombre.requestFocus();
     }

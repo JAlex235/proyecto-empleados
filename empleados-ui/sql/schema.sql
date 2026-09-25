@@ -18,6 +18,18 @@ CREATE TABLE empleados (
     activo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-## EXAMEN PARCIAL 2 AGREGAR COLUMNA anios-experiencia de tipo int no nulo y valor 0 como base
+
+## Datos iniciales para probar
+INSERT INTO empleados
+    (nombre_completo, departamento, salario_mensual,
+    fecha_contratacion, activo, anios_experiencia)
+VALUES
+    ('Ana López', 'Recursos Humanos', 6500.00, '2023-02-15', TRUE, 3),
+    ('Carlos Méndez', 'Arquitectura', 10500.00, '2017-06-10', TRUE, 12),
+    ('María González', 'Contabilidad', 7200.50, '2021-09-01', TRUE, 7),
+    ('Luis Ramírez', 'Soporte Técnico', 5800.00, '2025-01-20', FALSE, 1),
+    ('Sofía Castillo', 'Desarrollo', 12000.00, '2014-03-05', TRUE, 16);
+
+## Se agrega la columna anios_experiencia a la tabla empleados para examen parcial 2
 ALTER TABLE empleados
 ADD COLUMN anios_experiencia INT NOT NULL DEFAULT 0;
